@@ -25,8 +25,8 @@ public class OSSController {
     @ResponseBody
     public R getKey() {
         // 阿里云账号AccessKey拥有所有API的访问权限，风险很高。强烈建议您创建并使用RAM用户进行API访问或日常运维，请登录RAM控制台创建RAM用户。
-        String accessId = "LTAI5tCK7vhgECLxRoQLHQrr";
-        String accessKey = "hIibEDokCwgBAQLiFqZWHTfYB16eCV";
+        String accessId = "LTAI5tFP1mLB8zU3gFdeqpz4";
+        String accessKey = "nxePTAvbh7Im6bdTZaAJyytG9ZWQgA";
         // Endpoint以华东1（杭州）为例，其它Region请按实际情况填写。
         String endpoint = "oss-cn-beijing.aliyuncs.com";
         // 填写Bucket名称，例如examplebucket。
@@ -39,7 +39,7 @@ public class OSSController {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         String formattedDate = today.format(formatter);
         // 设置上传到OSS文件的前缀，可置空此项。置空后，文件将上传至Bucket的根目录下。
-        String dir = formattedDate+"/";
+        String dir = formattedDate;
 
         Map<String, String> respMap = null;
         // 创建ossClient实例。
@@ -58,7 +58,7 @@ public class OSSController {
             String postSignature = ossClient.calculatePostSignature(postPolicy);
 
             respMap = new LinkedHashMap<String, String>();
-            respMap.put("accessId", accessId);
+            respMap.put("accessid", accessId);
             respMap.put("policy", encodedPolicy);
             respMap.put("signature", postSignature);
             respMap.put("dir", dir);

@@ -1,8 +1,14 @@
 package com.chachao.product.controller;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.chachao.product.entity.BrandEntity;
+import com.chachao.product.entity.CategoryEntity;
+import com.chachao.product.service.BrandService;
+import com.chachao.product.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,6 +36,12 @@ public class CategoryBrandRelationController {
     @Autowired
     private CategoryBrandRelationService categoryBrandRelationService;
 
+    @Autowired
+    private CategoryService categoryService;
+
+    @Autowired
+    private BrandService brandService;
+
     /**
      * 列表
      */
@@ -40,6 +52,15 @@ public class CategoryBrandRelationController {
         return R.ok().put("page", page);
     }
 
+
+    @RequestMapping("/catelog/list")
+    public R getRelation(@RequestParam Map<String, Object> params){
+        String brandId = params.get("brandId").toString();
+        List<CategoryBrandRelationEntity> relation = categoryBrandRelationService
+                .list(new QueryWrapper<CategoryBrandRelationEntity>()
+                        .eq("brand_id", Long.parseLong(brandId)));
+        return R.ok().put("data", relation);
+    }
 
     /**
      * 信息
@@ -56,7 +77,11 @@ public class CategoryBrandRelationController {
      */
     @RequestMapping("/save")
     public R save(@RequestBody CategoryBrandRelationEntity categoryBrandRelation){
-		categoryBrandRelationService.save(categoryBrandRelation);
+        CategoryEntity categoryEntity = categoryService.getById(categoryBrandRelation.getCatelogId());
+        BrandEntity brandEntity = brandService.getById(categoryBrandRelation.getBrandId());
+        categoryBrandRelation.setBrandName(brandEntity.getName());
+        categoryBrandRelation.setCatelogName(categoryEntity.getName());
+        categoryBrandRelationService.save(categoryBrandRelation);
 
         return R.ok();
     }

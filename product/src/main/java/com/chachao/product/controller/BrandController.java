@@ -3,18 +3,20 @@ package com.chachao.product.controller;
 import java.util.Arrays;
 import java.util.Map;
 
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.chachao.common.valid.AddGroup;
+import com.chachao.product.service.CategoryBrandRelationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.StringUtils;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 import com.chachao.product.entity.BrandEntity;
 import com.chachao.product.service.BrandService;
 import com.chachao.common.utils.PageUtils;
 import com.chachao.common.utils.R;
 
+import javax.validation.Valid;
 
 
 /**
@@ -29,7 +31,8 @@ import com.chachao.common.utils.R;
 public class BrandController {
     @Autowired
     private BrandService brandService;
-
+    @Autowired
+    CategoryBrandRelationService categoryBrandRelationService;
     /**
      * 列表
      */
@@ -38,6 +41,21 @@ public class BrandController {
         PageUtils page = brandService.queryPage(params);
 
         return R.ok().put("page", page);
+    }
+
+
+    @PostMapping("/update/status")
+    public R updateStatus(@RequestBody Map<String, Object> params) {
+        Long brandId = Long.parseLong(params.get("brandId").toString());
+        Integer showStatus = Integer.parseInt(params.get("showStatus").toString());
+
+        BrandEntity updateEntity = new BrandEntity();
+        updateEntity.setShowStatus(showStatus);
+
+        brandService.update(updateEntity, new UpdateWrapper<BrandEntity>().eq("brand_id", brandId));
+
+        // 返回响应结果
+        return R.ok();
     }
 
 
@@ -55,7 +73,7 @@ public class BrandController {
      * 保存
      */
     @RequestMapping("/save")
-    public R save(@RequestBody BrandEntity brand){
+    public R save(@Validated({AddGroup.class}) @RequestBody BrandEntity brand){
 		brandService.save(brand);
 
         return R.ok();
@@ -67,7 +85,12 @@ public class BrandController {
     @RequestMapping("/update")
     public R update(@RequestBody BrandEntity brand){
 		brandService.updateById(brand);
+        if(!StringUtils.isEmpty(brand.getName())){
+            //同步更新其他关联表中的数据
+            categoryBrandRelationService.updateBrand(brand.getBrandId(),brand.getName());
 
+            //TODO 更新其他关联
+        }
         return R.ok();
     }
 

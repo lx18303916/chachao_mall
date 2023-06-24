@@ -12,3 +12,7 @@ spring:
     nacos:
       discovery:
         server-addr: 127.0.0.1:8848
+# 设置 MyBatis 的日志级别为 DEBUG
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

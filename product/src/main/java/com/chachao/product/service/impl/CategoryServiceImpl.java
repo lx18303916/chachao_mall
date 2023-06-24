@@ -1,5 +1,9 @@
 package com.chachao.product.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.chachao.product.entity.CategoryBrandRelationEntity;
+import com.chachao.product.service.CategoryBrandRelationService;
+import com.mysql.cj.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +27,9 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
 
     @Autowired
     CategoryDao categoryDao;
+
+    @Autowired
+    CategoryBrandRelationService categoryBrandRelationService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -48,6 +55,15 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
         }
 
         return parentNodes;
+    }
+
+    @Override
+    public void updateDetail(CategoryEntity category) {
+        this.updateById(category);
+        CategoryBrandRelationEntity relationEntity = new CategoryBrandRelationEntity();
+        relationEntity.setCatelogId(category.getCatId());
+        relationEntity.setCatelogName(category.getName());
+        categoryBrandRelationService.update(relationEntity, new UpdateWrapper<CategoryBrandRelationEntity>().eq("catelog_id", relationEntity.getCatelogId()));
     }
 
 }

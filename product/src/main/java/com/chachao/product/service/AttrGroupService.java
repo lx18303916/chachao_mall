@@ -2,9 +2,10 @@ package com.chachao.product.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.chachao.common.utils.PageUtils;
-import com.chachao.common.utils.Query;
 import com.chachao.product.entity.AttrGroupEntity;
+import com.chachao.product.entity.CategoryEntity;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,6 +17,8 @@ import java.util.Map;
  */
 public interface AttrGroupService extends IService<AttrGroupEntity> {
 
-    PageUtils queryPage(Map<String, Object> params);
+    PageUtils queryPage(Map<String, Object> params, Long catId);
+
+    void findCatIdPath(CategoryEntity categoryEntity, List<Long> path);
 }
 

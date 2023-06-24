@@ -1,8 +1,11 @@
 package com.chachao.product.controller;
 
-import java.util.Arrays;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
+import com.baomidou.mybatisplus.extension.service.additional.query.impl.QueryChainWrapper;
+import com.chachao.product.entity.CategoryEntity;
+import com.chachao.product.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,13 +33,25 @@ public class AttrGroupController {
     @Autowired
     private AttrGroupService attrGroupService;
 
+    @Autowired
+    private CategoryService categoryService;
+
     /**
      * 列表
      */
     @RequestMapping("/list")
     public R list(@RequestParam Map<String, Object> params){
-        PageUtils page = attrGroupService.queryPage(params);
+        PageUtils page = attrGroupService.queryPage(params, 0L);
 
+        return R.ok().put("page", page);
+    }
+
+    /**
+     * 列表
+     */
+    @RequestMapping("/list/{catID}")
+    public R list(@RequestParam Map<String, Object> params, @PathVariable("catID") Long catId){
+        PageUtils page = attrGroupService.queryPage(params, catId);
         return R.ok().put("page", page);
     }
 
@@ -47,7 +62,13 @@ public class AttrGroupController {
     @RequestMapping("/info/{attrGroupId}")
     public R info(@PathVariable("attrGroupId") Long attrGroupId){
 		AttrGroupEntity attrGroup = attrGroupService.getById(attrGroupId);
-
+        CategoryEntity categoryEntity = categoryService.getById(attrGroup.getCatelogId());
+        List<Long> path = new ArrayList<>();
+        attrGroupService.findCatIdPath(categoryEntity, path);
+        Collections.reverse(path);
+        Long[] arrpath = new Long[path.size()];
+        for(int i = 0; i < path.size(); i++) arrpath[i] = path.get(i);
+        attrGroup.setCatelogPath(arrpath);
         return R.ok().put("attrGroup", attrGroup);
     }
 
