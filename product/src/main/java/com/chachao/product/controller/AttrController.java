@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.chachao.common.utils.PageUtils;
 import com.chachao.common.utils.R;
+import com.chachao.product.vo.AttrBaseRequestVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,6 +42,17 @@ public class AttrController {
         return R.ok().put("page", page);
     }
 
+    /**
+     * 列表
+     */
+    @RequestMapping("/{type}/list/{catId}")
+    public R listBase(@RequestParam Map<String, Object> params, @PathVariable("catId") Long catId, @PathVariable("type") String type){
+        PageUtils page = attrService.queryPageBase(params, catId, type);
+
+
+        return R.ok().put("page", page);
+    }
+
 
     /**
      * 信息
@@ -56,8 +68,8 @@ public class AttrController {
      * 保存
      */
     @RequestMapping("/save")
-    public R save(@RequestBody AttrEntity attr){
-		attrService.save(attr);
+    public R save(@RequestBody AttrBaseRequestVo attr){
+		attrService.saveAttr(attr);
 
         return R.ok();
     }

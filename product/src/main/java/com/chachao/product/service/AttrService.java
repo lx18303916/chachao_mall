@@ -2,8 +2,8 @@ package com.chachao.product.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.chachao.common.utils.PageUtils;
-import com.chachao.common.utils.Query;
 import com.chachao.product.entity.AttrEntity;
+import com.chachao.product.vo.AttrBaseRequestVo;
 
 import java.util.Map;
 
@@ -17,5 +17,9 @@ import java.util.Map;
 public interface AttrService extends IService<AttrEntity> {
 
     PageUtils queryPage(Map<String, Object> params);
+
+    PageUtils queryPageBase(Map<String, Object> params, Long catId, String type);
+
+    void saveAttr(AttrBaseRequestVo attr);
 }
 
