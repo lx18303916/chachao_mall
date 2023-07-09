@@ -4,14 +4,14 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.baomidou.mybatisplus.extension.service.additional.query.impl.QueryChainWrapper;
+import com.chachao.product.entity.AttrAttrgroupRelationEntity;
+import com.chachao.product.entity.AttrEntity;
 import com.chachao.product.entity.CategoryEntity;
+import com.chachao.product.service.AttrAttrgroupRelationService;
+import com.chachao.product.service.AttrService;
 import com.chachao.product.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.chachao.product.entity.AttrGroupEntity;
 import com.chachao.product.service.AttrGroupService;
@@ -36,6 +36,12 @@ public class AttrGroupController {
     @Autowired
     private CategoryService categoryService;
 
+    @Autowired
+    private AttrService attrService;
+
+    @Autowired
+    private AttrAttrgroupRelationService attrAttrgroupRelationService;
+
     /**
      * 列表
      */
@@ -45,6 +51,20 @@ public class AttrGroupController {
 
         return R.ok().put("page", page);
     }
+
+    @GetMapping("/{attrgroupId}/attr/relation")
+    public R attrRelation(@PathVariable("attrgroupId") Long attrgroupId){
+        List<AttrEntity> data = attrService.getRelationAttr(attrgroupId);
+        return R.ok().put("data", data);
+    }
+
+    @GetMapping("/{attrgroupId}/noattr/relation")
+    public R attrNoRelation(@RequestParam Map<String, Object> params, @PathVariable("attrgroupId") Long attrGroupId) {
+        PageUtils page = attrService.getAttrNoRelation(params, attrGroupId);
+
+        return R.ok().put("page", page);
+    }
+
 
     /**
      * 列表
@@ -98,6 +118,17 @@ public class AttrGroupController {
     @RequestMapping("/delete")
     public R delete(@RequestBody Long[] attrGroupIds){
 		attrGroupService.removeByIds(Arrays.asList(attrGroupIds));
+
+        return R.ok();
+    }
+
+    /**
+     * 删除
+     */
+    @PostMapping("/attr/relation/delete")
+    public R deleteAttrRelation(@RequestBody AttrAttrgroupRelationEntity[] attrAttrgroupRelation){
+        attrAttrgroupRelationService.deleteBatch(attrAttrgroupRelation);
+
 
         return R.ok();
     }

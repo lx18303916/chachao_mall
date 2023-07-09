@@ -1,13 +1,13 @@
 server:
-  port: 10001
+  port: 8000
 spring:
   datasource:
     username: root
     password: woaini123
-    url: jdbc:mysql://47.115.209.12:3306/gulimall_pms
+    url: jdbc:mysql://47.115.209.12:3306/gulimall_ums
     driver-class-name: com.mysql.jdbc.Driver
   application:
-    name: product
+    name: member
   cloud:
     nacos:
       discovery:

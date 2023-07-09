@@ -5,6 +5,7 @@ import com.chachao.common.utils.PageUtils;
 import com.chachao.product.entity.AttrEntity;
 import com.chachao.product.vo.AttrBaseRequestVo;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,5 +22,9 @@ public interface AttrService extends IService<AttrEntity> {
     PageUtils queryPageBase(Map<String, Object> params, Long catId, String type);
 
     void saveAttr(AttrBaseRequestVo attr);
+
+    List<AttrEntity> getRelationAttr(Long attrgroupId);
+
+    PageUtils getAttrNoRelation(Map<String, Object> params, Long attrGroupId);
 }
 
