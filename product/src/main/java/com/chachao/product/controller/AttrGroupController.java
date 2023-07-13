@@ -10,6 +10,7 @@ import com.chachao.product.entity.CategoryEntity;
 import com.chachao.product.service.AttrAttrgroupRelationService;
 import com.chachao.product.service.AttrService;
 import com.chachao.product.service.CategoryService;
+import com.chachao.product.vo.AttrGroupWithAttrsVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,6 +51,14 @@ public class AttrGroupController {
         PageUtils page = attrGroupService.queryPage(params, 0L);
 
         return R.ok().put("page", page);
+    }
+
+    @GetMapping("/{catelogId}/withattr")
+    public R getAttrGroupWithAttrs(@PathVariable("catelogId") Long catelogId){
+        // 1.查询当前分类下的所有属性分组
+        List<AttrGroupWithAttrsVo> vos = attrGroupService.getAttrGroupWithAttrByCatelogId(catelogId);
+        // 2.查询每个分组的所有信息
+        return R.ok().put("data", vos);
     }
 
     @GetMapping("/{attrgroupId}/attr/relation")
