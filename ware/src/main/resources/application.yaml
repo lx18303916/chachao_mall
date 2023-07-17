@@ -1,0 +1,18 @@
+server:
+  port: 11000
+spring:
+  datasource:
+    username: root
+    password: woaini123
+    url: jdbc:mysql://47.115.209.12:3306/gulimall_wms
+    driver-class-name: com.mysql.jdbc.Driver
+  application:
+    name: ware
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+# 设置 MyBatis 的日志级别为 DEBUG
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

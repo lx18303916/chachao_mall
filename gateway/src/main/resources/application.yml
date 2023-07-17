@@ -18,7 +18,12 @@ spring:
             - Path=/api/thirdpart/**
           filters:
             - RewritePath=/api/thirdpart/(?<segment>.*),/thirdpart/$\{segment}
-
+        - id: route_ware
+          uri: lb://ware
+          predicates:
+            - Path=/api/ware/**
+          filters:
+            - RewritePath=/api/ware/(?<segment>.*),/ware/$\{segment}
         - id: route_coupon
           uri: lb://coupon
           predicates:

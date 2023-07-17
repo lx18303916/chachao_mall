@@ -1,10 +1,16 @@
 package com.chachao.product.service.impl;
 
+import com.alibaba.fastjson.TypeReference;
+import com.chachao.common.constant.ProductConstant;
+import com.chachao.common.to.SkuEsModel;
+import com.chachao.common.to.SkuHasStockVo;
 import com.chachao.common.to.SkuReductionTO;
 import com.chachao.common.to.SpuBoundTO;
 import com.chachao.common.utils.R;
 import com.chachao.product.entity.*;
 import com.chachao.product.feign.CouponFeignService;
+import com.chachao.product.feign.SearchFeignService;
+import com.chachao.product.feign.WareFeignService;
 import com.chachao.product.service.*;
 import com.chachao.product.vo.*;
 import org.springframework.beans.BeanUtils;
@@ -12,9 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -57,6 +61,10 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
     @Autowired
     private CategoryService categoryService;
 
+    @Autowired(required = false)
+    private WareFeignService wareFeignService;
+    @Autowired
+    private SearchFeignService searchFeignService;
     /**
      * feign 远程调用优惠券服务
      */
@@ -184,6 +192,122 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
                     }
                 }
             });
+        }
+    }
+
+    /**
+     * spu管理模糊查询
+     */
+    @Override
+    public PageUtils queryPageByCondition(Map<String, Object> params) {
+
+        QueryWrapper<SpuInfoEntity> wrapper = new QueryWrapper<>();
+
+        // 根据 spu管理带来的条件进行叠加模糊查询
+        String key = (String) params.get("key");
+        if (!StringUtils.isEmpty(key)) {
+            wrapper.and(w -> w.eq("id", key).or().like("spu_name", key));
+        }
+
+        String status = (String) params.get("status");
+        if (!StringUtils.isEmpty(status)) {
+            wrapper.eq("publish_status", status);
+        }
+
+        String brandId = (String) params.get("brandId");
+        if (!StringUtils.isEmpty(brandId) && !"0".equalsIgnoreCase(brandId)) {
+            wrapper.eq("brand_id", brandId);
+        }
+
+        String catelogId = (String) params.get("catelogId");
+        if (!StringUtils.isEmpty(catelogId) && !"0".equalsIgnoreCase(catelogId)) {
+            wrapper.eq("catalog_id", catelogId);
+        }
+
+        IPage<SpuInfoEntity> page = this.page(
+                new Query<SpuInfoEntity>().getPage(params),
+                wrapper
+        );
+        return new PageUtils(page);
+    }
+
+    @Override
+    public void up(Long spuId) {
+// 1 组装数据 查出当前spuId对应的所有sku信息
+        List<SkuInfoEntity> skus = skuInfoService.getSkusBySpuId(spuId);
+        // 查询这些sku是否有库存
+        List<Long> skuids = skus.stream().map(sku -> sku.getSkuId()).collect(Collectors.toList());
+        // 2 封装每个sku的信息
+
+        // 3.查询当前sku所有可以被用来检索的规格属性
+        List<ProductAttrValueEntity> baseAttrs = attrValueService.baseAttrListForSpu(spuId);
+        // 得到基本属性id
+        List<Long> attrIds = baseAttrs.stream().map(attr -> attr.getAttrId()).collect(Collectors.toList());
+        // 过滤出可被检索的基本属性id，即search_type = 1 [数据库中目前 4、5、6、11不可检索]
+        Set<Long> ids = new HashSet<>(attrService.selectSearchAttrIds(attrIds));
+        // 可被检索的属性封装到SkuEsModel.Attrs中
+        List<SkuEsModel.Attrs> attrs = baseAttrs.stream()
+                .filter(item -> ids.contains(item.getAttrId()))
+                .map(item -> {
+                    SkuEsModel.Attrs attr = new SkuEsModel.Attrs();
+                    BeanUtils.copyProperties(item, attr);
+                    return attr;
+                }).collect(Collectors.toList());
+        // 每件skuId是否有库存
+        Map<Long, Boolean> stockMap = null;
+        try {
+            // 3.1 远程调用库存系统 查询该sku是否有库存
+            R hasStock = wareFeignService.getSkuHasStock(skuids);
+            // 构造器受保护 所以写成内部类对象
+            stockMap = hasStock.getData(new TypeReference<List<SkuHasStockVo>>() {})
+                    .stream()
+                    .collect(Collectors.toMap(SkuHasStockVo::getSkuId, item -> item.getHasStock()));
+            log.warn("服务调用成功" + hasStock);
+        } catch (Exception e) {
+            log.error("库存服务调用失败: 原因{}", e);
+        }
+
+        Map<Long, Boolean> finalStockMap = stockMap;//防止lambda中改变
+        // 开始封装es
+        List<SkuEsModel> skuEsModels = skus.stream().map(sku -> {
+            SkuEsModel esModel = new SkuEsModel();
+            BeanUtils.copyProperties(sku, esModel);
+            esModel.setSkuPrice(sku.getPrice());
+            esModel.setSkuImg(sku.getSkuDefaultImg());
+            // 4 设置库存，只查是否有库存，不查有多少
+            if (finalStockMap == null) {
+                esModel.setHasStock(true);
+            } else {
+                esModel.setHasStock(finalStockMap.get(sku.getSkuId()));
+            }
+            // TODO 1.热度评分  刚上架是0
+            esModel.setHotScore(0L);
+            // 设置品牌信息
+            BrandEntity brandEntity = brandService.getById(esModel.getBrandId());
+            esModel.setBrandName(brandEntity.getName());
+            esModel.setBrandImg(brandEntity.getLogo());
+
+            // 查询分类信息
+            CategoryEntity categoryEntity = categoryService.getById(esModel.getCatalogId());
+            esModel.setCatalogName(categoryEntity.getName());
+
+            // 保存商品的属性，  查询当前sku的所有可以被用来检索的规格属性，同一spu都一样，在外面查一遍即可
+            esModel.setAttrs(attrs);
+            return esModel;
+        }).collect(Collectors.toList());
+
+        // 5.发给ES进行保存  gulimall-search
+        R r = searchFeignService.productStatusUp(skuEsModels);
+        if (r.getCode() == 0) {
+            // 远程调用成功
+            baseMapper.updateSpuStatus(spuId, ProductConstant.StatusEnum.SPU_UP.getCode());
+        } else {
+            // 远程调用失败 TODO 接口幂等性 重试机制
+            /**
+             * Feign 的调用流程  Feign有自动重试机制
+             * 1. 发送请求执行
+             * 2.
+             */
         }
     }
 
